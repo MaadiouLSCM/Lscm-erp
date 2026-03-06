@@ -9,9 +9,10 @@ COPY tsconfig.json ./
 COPY prisma ./prisma/
 COPY src ./src/
 
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 RUN npm run build
 
 EXPOSE 8080
 
-CMD npx prisma migrate deploy && node dist/main.js
+CMD ./node_modules/.bin/prisma migrate deploy && node dist/main.js
+
