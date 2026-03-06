@@ -1,18 +1,16 @@
-FROM node:20-alpine
+FROM node:20-slim
+
+# Install OpenSSL (required by Prisma)
+RUN apt-get update -y && apt-get install -y openssl libssl-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm install
 
-COPY tsconfig.json ./
-COPY prisma ./prisma/
-COPY src ./src/
+COPY . .
 
 RUN ./node_modules/.bin/prisma generate
 RUN npm run build
 
-EXPOSE 8080
-
 CMD ./node_modules/.bin/prisma migrate deploy && node dist/main.js
-
