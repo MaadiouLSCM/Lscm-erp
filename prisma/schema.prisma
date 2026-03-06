@@ -1,0 +1,40 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model ShipmentOrder {
+  id             String   @id @default(cuid())
+  orderReference String   @unique
+  poNumber       String?
+  supplierId     String
+  supplierName   String
+  supplierCountry String
+  buyerId        String
+  buyerName      String
+  buyerCountry   String
+  buyerEmail     String?
+  commodityCode  String
+  description    String
+  quantity       Int
+  unitOfMeasure  String   @default("PCS")
+  grossWeight    Float
+  netWeight      Float?
+  originLocation String
+  destLocation   String
+  incoterm       String
+  transportMode  String
+  currencyCode   String   @default("USD")
+  status         String   @default("DRAFT")
+  phase          String   @default("PREPARATION")
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  totalCost      Float    @default(0)
+
+  @@map("shipment_orders")
+}
