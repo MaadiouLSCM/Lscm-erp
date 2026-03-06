@@ -1,1 +1,10 @@
-
+{
+  "name": "lscm-erp",
+  "version": "1.0.0",
+  "description": "LSCM ERP Application",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {}
+}
