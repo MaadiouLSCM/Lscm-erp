@@ -504,8 +504,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 }
 
 const { execSync } = require('child_process');
-try { execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' }); } catch(e) { console.log('DB push error:', e); }
-
+try { execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit', env: { ...process.env } }); } catch(e) { console.log('DB push skipped'); }
 app.listen(PORT, () => {
   console.log('CLEAR ERP v2.0 running on port ' + PORT);
 });
