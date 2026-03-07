@@ -321,7 +321,7 @@ app.get('/api/notifications', auth, async (req: any, res) => {
   res.json(notifs);
 });
 
-app.post('/api/seed', async (_, res) => {
+app.get('/api/seed', async (_, res) => {
   try {
     const h1 = await bcrypt.hash('Admin@LSCM2026', 12);
     const h2 = await bcrypt.hash('Manager@2026', 12);
