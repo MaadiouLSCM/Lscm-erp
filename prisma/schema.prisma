@@ -1,40 +1,381 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(OPERATOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  pickups       Pickup[]
+  documents     Document[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
 }
 
-model ShipmentOrder {
-  id             String   @id @default(cuid())
-  orderReference String   @unique
-  poNumber       String?
-  supplierId     String
-  supplierName   String
-  supplierCountry String
-  buyerId        String
-  buyerName      String
-  buyerCountry   String
-  buyerEmail     String?
-  commodityCode  String
-  description    String
-  quantity       Int
-  unitOfMeasure  String   @default("PCS")
-  grossWeight    Float
-  netWeight      Float?
-  originLocation String
-  destLocation   String
-  incoterm       String
-  transportMode  String
-  currencyCode   String   @default("USD")
-  status         String   @default("DRAFT")
-  phase          String   @default("PREPARATION")
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  totalCost      Float    @default(0)
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
 
-  @@map("shipment_orders")
+model PurchaseOrder {
+  id            String   @id @default(cuid())
+  poNumber      String   @unique
+  sapRef        String?
+  client        String
+  project       String?
+  description   String
+  commodity     String?
+  weightKg      Float
+  volumeCbm     Float
+  packages      Int      @default(1)
+  originCity    String
+  originCountry String
+  destCity      String
+  destCountry   String
+  freightMode   FreightMode
+  urgency       Urgency  @default(NORMAL)
+  status        POStatus @default(CREATED)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  pickups       Pickup[]
+  consolidation ConsolidationItem[]
+  documents     Document[]
+  tracking      TrackingEvent[]
+  customs       CustomsRecord?
+  delivery      Delivery?
+}
+
+enum FreightMode {
+  SEA
+  AIR
+  ROAD
+}
+
+enum Urgency {
+  ROUTINE
+  NORMAL
+  URGENT
+  AOG
+}
+
+enum POStatus {
+  CREATED
+  PICKUP_SCHEDULED
+  PICKUP_DONE
+  AT_ORIGIN_WAREHOUSE
+  CONSOLIDATED
+  DOCS_COMPLETE
+  GREEN_LIGHT
+  FREIGHT_BOOKED
+  IN_TRANSIT
+  PORT_ARRIVAL
+  CUSTOMS_HOLD
+  CUSTOMS_CLEARED
+  DELIVERY_SCHEDULED
+  DELIVERED
+  POD_RECEIVED
+}
+
+model Pickup {
+  id             String       @id @default(cuid())
+  pickupRef      String       @unique
+  poId           String
+  po             PurchaseOrder @relation(fields: [poId], references: [id])
+  supplierId     String?
+  supplier       Supplier?    @relation(fields: [supplierId], references: [id])
+  scheduledDate  DateTime
+  actualDate     DateTime?
+  collectionCity String
+  collectionAddr String
+  truckerName    String?
+  truckerContact String?
+  truckPlate     String?
+  weightKg       Float
+  packages       Int
+  status         PickupStatus @default(SCHEDULED)
+  notes          String?
+  assignedTo     String?
+  operator       User?        @relation(fields: [assignedTo], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+enum PickupStatus {
+  SCHEDULED
+  EN_ROUTE
+  ARRIVED
+  LOADED
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+model Supplier {
+  id       String   @id @default(cuid())
+  name     String
+  country  String
+  city     String
+  contact  String?
+  email    String?
+  pickups  Pickup[]
+}
+
+model Consolidation {
+  id            String              @id @default(cuid())
+  ref           String              @unique
+  hubCity       String
+  freightMode   FreightMode
+  client        String
+  cutoffDate    DateTime?
+  etd           DateTime?
+  status        ConsolStatus        @default(OPEN)
+  totalWeightKg Float               @default(0)
+  totalCbm      Float               @default(0)
+  totalPackages Int                 @default(0)
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  items         ConsolidationItem[]
+  shipment      Shipment?
+}
+
+model ConsolidationItem {
+  id              String        @id @default(cuid())
+  consolidationId String
+  consolidation   Consolidation @relation(fields: [consolidationId], references: [id])
+  poId            String
+  po              PurchaseOrder @relation(fields: [poId], references: [id])
+  weightKg        Float
+  volumeCbm       Float
+  packages        Int
+  marksNumbers    String?
+  addedAt         DateTime      @default(now())
+  @@unique([consolidationId, poId])
+}
+
+enum ConsolStatus {
+  OPEN
+  CUTOFF_REACHED
+  DOCS_PENDING
+  READY
+  SHIPPED
+  CLOSED
+}
+
+model Document {
+  id         String      @id @default(cuid())
+  poId       String
+  po         PurchaseOrder @relation(fields: [poId], references: [id])
+  type       DocType
+  status     DocStatus   @default(PENDING)
+  fileName   String?
+  fileUrl    String?
+  issueDate  DateTime?
+  expiryDate DateTime?
+  reference  String?
+  notes      String?
+  uploadedBy String?
+  uploader   User?       @relation(fields: [uploadedBy], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+enum DocType {
+  PROFORMA_INVOICE
+  COMMERCIAL_INVOICE
+  PACKING_LIST
+  CCVO
+  FORM_C
+  BILL_OF_LADING
+  AWB
+  CERTIFICATE_ORIGIN
+  PHYTO_SANITARY
+  IMPORT_LICENSE
+  FREIGHT_INVOICE
+  INSURANCE_CERT
+  DELIVERY_NOTE
+  POD
+}
+
+enum DocStatus {
+  PENDING
+  UPLOADED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model Shipment {
+  id              String         @id @default(cuid())
+  consolidationId String         @unique
+  consolidation   Consolidation  @relation(fields: [consolidationId], references: [id])
+  blAwbNumber     String?        @unique
+  carrier         String
+  vessel          String?
+  voyage          String?
+  flightNumber    String?
+  pol             String
+  pod             String
+  finalDest       String?
+  etd             DateTime?
+  atd             DateTime?
+  eta             DateTime?
+  ata             DateTime?
+  freightCost     Float?
+  currency        String         @default("USD")
+  incoterm        String?
+  status          ShipmentStatus @default(BOOKING)
+  remarks         String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  tracking        TrackingEvent[]
+}
+
+enum ShipmentStatus {
+  BOOKING
+  SPACE_CONFIRMED
+  DOCS_SUBMITTED
+  SAILING
+  TRANSHIPMENT
+  PORT_ARRIVAL
+  DISCHARGED
+  CUSTOMS_HOLD
+  CUSTOMS_CLEARED
+  DELIVERED
+}
+
+model TrackingEvent {
+  id          String         @id @default(cuid())
+  poId        String?
+  po          PurchaseOrder? @relation(fields: [poId], references: [id])
+  shipmentId  String?
+  shipment    Shipment?      @relation(fields: [shipmentId], references: [id])
+  eventType   TrackingType
+  location    String?
+  description String
+  eventDate   DateTime
+  source      String?
+  createdAt   DateTime       @default(now())
+}
+
+enum TrackingType {
+  PICKUP_SCHEDULED
+  PICKED_UP
+  AT_WAREHOUSE
+  CONSOLIDATED
+  DOCS_SUBMITTED
+  GREEN_LIGHT_RECEIVED
+  FREIGHT_BOOKED
+  CARGO_RECEIVED
+  VESSEL_DEPARTED
+  TRANSHIPMENT
+  PORT_ARRIVAL
+  CUSTOMS_ENTRY
+  CUSTOMS_RELEASED
+  AVAILABLE_DELIVERY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  EXCEPTION
+}
+
+model CustomsRecord {
+  id            String        @id @default(cuid())
+  poId          String        @unique
+  po            PurchaseOrder @relation(fields: [poId], references: [id])
+  country       String
+  formCNumber   String?
+  ccvoNumber    String?
+  dutyAmount    Float?
+  vatAmount     Float?
+  currency      String        @default("NGN")
+  entryDate     DateTime?
+  releaseDate   DateTime?
+  status        CustomsStatus @default(PENDING)
+  agent         String?
+  agentRef      String?
+  holdReason    String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum CustomsStatus {
+  PENDING
+  ENTRY_SUBMITTED
+  ASSESSMENT
+  DUTY_PAID
+  EXAMINATION
+  RELEASED
+  ON_HOLD
+  BLOCKED
+}
+
+model Delivery {
+  id            String         @id @default(cuid())
+  poId          String         @unique
+  po            PurchaseOrder  @relation(fields: [poId], references: [id])
+  deliveryAddr  String
+  contactName   String?
+  contactPhone  String?
+  scheduledDate DateTime?
+  actualDate    DateTime?
+  truckerName   String?
+  truckPlate    String?
+  driverPhone   String?
+  condition     String?
+  receivedBy    String?
+  signatureUrl  String?
+  photoUrl      String?
+  podRef        String?
+  status        DeliveryStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum DeliveryStatus {
+  PENDING
+  SCHEDULED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  PARTIAL_DELIVERY
+  REFUSED
+  FAILED
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entity     String
+  entityId   String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
 }
