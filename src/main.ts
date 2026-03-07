@@ -500,7 +500,7 @@ async function renderReports(){
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
 </script>
 </body>
-</html>\`;
+</html>`;
 }
 
 app.listen(PORT, () => {
