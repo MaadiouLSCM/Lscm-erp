@@ -326,8 +326,8 @@ app.post('/api/seed', async (_, res) => {
     const h1 = await bcrypt.hash('Admin@LSCM2026', 12);
     const h2 = await bcrypt.hash('Manager@2026', 12);
     await prisma.user.upsert({ where: { email: 'admin@lscmltd.com' }, update: {}, create: { email: 'admin@lscmltd.com', password: h1, name: 'Admin LSCM', role: 'ADMIN' } });
-    await prisma.user.upsert({ where: { email: 'maadiou@lscmltd.com' }, update: {}, create: { email: 'maadiou@lscmltd.com', password: h2, name: 'Maadiou Diallo', role: 'MANAGER' } });
-    res.json({ message: '✅ Seed OK', logins: [{ email:'admin@lscmltd.com', password:'Admin@LSCM2026' }, { email:'maadiou@lscmltd.com', password:'Manager@2026' }] });
+    await prisma.user.upsert({ where: { email: 'mgt@lscmltd.com' }, update: {}, create: { email: 'mgt@lscmltd.com', password: h2, name: 'MGT LSCM', role: 'MANAGER' } });
+    res.json({ message: '✅ Seed OK', logins: [{ email:'admin@lscmltd.com', password:'Admin@LSCM2026' }, { email:'mgt@lscmltd.com', password:'Manager@2026' }] });
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 function getHTML() {
