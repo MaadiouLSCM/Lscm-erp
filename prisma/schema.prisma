@@ -1,3 +1,5 @@
+// CLEAR ERP — LSCM Nigeria Ltd — schema.prisma v2.1
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,90 +17,69 @@ model User {
   role      Role     @default(OPERATOR)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  pickups       Pickup[]
-  documents     Document[]
-  notifications Notification[]
-  auditLogs     AuditLog[]
-tasksAssigned  Task[]     @relation("TaskAssignee")
+
+  pickups        Pickup[]
+  documents      Document[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  tasksAssigned  Task[]     @relation("TaskAssignee")
   tasksCreated   Task[]     @relation("TaskCreator")
   emailsSent     EmailLog[]
 }
 
-enum Role {
-  ADMIN
-  MANAGER
-  OPERATOR
-  VIEWER
-}
+enum Role { ADMIN MANAGER OPERATOR VIEWER }
 
 model PurchaseOrder {
-  id            String   @id @default(cuid())
-  poNumber      String   @unique
+  id            String      @id @default(cuid())
+  poNumber      String      @unique
   sapRef        String?
   client        String
   project       String?
   description   String
   commodity     String?
+  hsCode        String?
   weightKg      Float
   volumeCbm     Float
-  packages      Int      @default(1)
+  packages      Int         @default(1)
+  value         Float?
+  currency      String      @default("USD")
   originCity    String
   originCountry String
   destCity      String
   destCountry   String
   freightMode   FreightMode
-  urgency       Urgency  @default(NORMAL)
-  status        POStatus @default(CREATED)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  urgency       Urgency     @default(NORMAL)
+  status        POStatus    @default(CREATED)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
   pickups       Pickup[]
   consolidation ConsolidationItem[]
   documents     Document[]
   tracking      TrackingEvent[]
   customs       CustomsRecord?
   delivery      Delivery?
-tasks     Task[]
-  emailLogs EmailLog[]
+  tasks         Task[]
+  emailLogs     EmailLog[]
 }
 
-enum FreightMode {
-  SEA
-  AIR
-  ROAD
-}
-
-enum Urgency {
-  ROUTINE
-  NORMAL
-  URGENT
-  AOG
-}
+enum FreightMode { SEA AIR ROAD }
+enum Urgency     { ROUTINE NORMAL URGENT AOG }
 
 enum POStatus {
-  CREATED
-  PICKUP_SCHEDULED
-  PICKUP_DONE
-  AT_ORIGIN_WAREHOUSE
-  CONSOLIDATED
-  DOCS_COMPLETE
-  GREEN_LIGHT
-  FREIGHT_BOOKED
-  IN_TRANSIT
-  PORT_ARRIVAL
-  CUSTOMS_HOLD
-  CUSTOMS_CLEARED
-  DELIVERY_SCHEDULED
-  DELIVERED
-  POD_RECEIVED
+  CREATED PICKUP_SCHEDULED PICKUP_DONE AT_ORIGIN_WAREHOUSE
+  CONSOLIDATED DOCS_COMPLETE GREEN_LIGHT FREIGHT_BOOKED IN_TRANSIT
+  PORT_ARRIVAL CUSTOMS_HOLD CUSTOMS_CLEARED DELIVERY_SCHEDULED
+  DELIVERED POD_RECEIVED
 }
 
 model Pickup {
-  id             String       @id @default(cuid())
-  pickupRef      String       @unique
+  id             String        @id @default(cuid())
+  pickupRef      String        @unique
   poId           String
   po             PurchaseOrder @relation(fields: [poId], references: [id])
   supplierId     String?
-  supplier       Supplier?    @relation(fields: [supplierId], references: [id])
+  supplier       Supplier?     @relation(fields: [supplierId], references: [id])
   scheduledDate  DateTime
   actualDate     DateTime?
   collectionCity String
@@ -108,32 +89,26 @@ model Pickup {
   truckPlate     String?
   weightKg       Float
   packages       Int
-  status         PickupStatus @default(SCHEDULED)
+  status         PickupStatus  @default(SCHEDULED)
   notes          String?
   assignedTo     String?
-  operator       User?        @relation(fields: [assignedTo], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  operator       User?         @relation(fields: [assignedTo], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 enum PickupStatus {
-  SCHEDULED
-  EN_ROUTE
-  ARRIVED
-  LOADED
-  COMPLETED
-  CANCELLED
-  FAILED
+  SCHEDULED EN_ROUTE ARRIVED LOADED COMPLETED CANCELLED FAILED
 }
 
 model Supplier {
-  id       String   @id @default(cuid())
-  name     String
-  country  String
-  city     String
-  contact  String?
-  email    String?
-  pickups  Pickup[]
+  id      String   @id @default(cuid())
+  name    String
+  country String
+  city    String
+  contact String?
+  email   String?
+  pickups Pickup[]
 }
 
 model Consolidation {
@@ -151,6 +126,7 @@ model Consolidation {
   notes         String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
+
   items         ConsolidationItem[]
   shipment      Shipment?
 }
@@ -166,24 +142,20 @@ model ConsolidationItem {
   packages        Int
   marksNumbers    String?
   addedAt         DateTime      @default(now())
+
   @@unique([consolidationId, poId])
 }
 
 enum ConsolStatus {
-  OPEN
-  CUTOFF_REACHED
-  DOCS_PENDING
-  READY
-  SHIPPED
-  CLOSED
+  OPEN CUTOFF_REACHED DOCS_PENDING READY SHIPPED CLOSED
 }
 
 model Document {
-  id         String      @id @default(cuid())
+  id         String        @id @default(cuid())
   poId       String
   po         PurchaseOrder @relation(fields: [poId], references: [id])
   type       DocType
-  status     DocStatus   @default(PENDING)
+  status     DocStatus     @default(PENDING)
   fileName   String?
   fileUrl    String?
   issueDate  DateTime?
@@ -191,35 +163,19 @@ model Document {
   reference  String?
   notes      String?
   uploadedBy String?
-  uploader   User?       @relation(fields: [uploadedBy], references: [id])
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  uploader   User?         @relation(fields: [uploadedBy], references: [id])
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 }
 
 enum DocType {
-  PROFORMA_INVOICE
-  COMMERCIAL_INVOICE
-  PACKING_LIST
-  CCVO
-  FORM_C
-  BILL_OF_LADING
-  AWB
-  CERTIFICATE_ORIGIN
-  PHYTO_SANITARY
-  IMPORT_LICENSE
-  FREIGHT_INVOICE
-  INSURANCE_CERT
-  DELIVERY_NOTE
-  POD
+  PROFORMA_INVOICE COMMERCIAL_INVOICE PACKING_LIST CCVO FORM_C
+  BILL_OF_LADING AWB CERTIFICATE_ORIGIN PHYTO_SANITARY
+  IMPORT_LICENSE FREIGHT_INVOICE INSURANCE_CERT DELIVERY_NOTE POD
 }
 
 enum DocStatus {
-  PENDING
-  UPLOADED
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
-  EXPIRED
+  PENDING UPLOADED UNDER_REVIEW APPROVED REJECTED EXPIRED
 }
 
 model Shipment {
@@ -245,20 +201,13 @@ model Shipment {
   remarks         String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
   tracking        TrackingEvent[]
 }
 
 enum ShipmentStatus {
-  BOOKING
-  SPACE_CONFIRMED
-  DOCS_SUBMITTED
-  SAILING
-  TRANSHIPMENT
-  PORT_ARRIVAL
-  DISCHARGED
-  CUSTOMS_HOLD
-  CUSTOMS_CLEARED
-  DELIVERED
+  BOOKING SPACE_CONFIRMED DOCS_SUBMITTED SAILING TRANSHIPMENT
+  PORT_ARRIVAL DISCHARGED CUSTOMS_HOLD CUSTOMS_CLEARED DELIVERED
 }
 
 model TrackingEvent {
@@ -276,55 +225,35 @@ model TrackingEvent {
 }
 
 enum TrackingType {
-  PICKUP_SCHEDULED
-  PICKED_UP
-  AT_WAREHOUSE
-  CONSOLIDATED
-  DOCS_SUBMITTED
-  GREEN_LIGHT_RECEIVED
-  FREIGHT_BOOKED
-  CARGO_RECEIVED
-  VESSEL_DEPARTED
-  TRANSHIPMENT
-  PORT_ARRIVAL
-  CUSTOMS_ENTRY
-  CUSTOMS_RELEASED
-  AVAILABLE_DELIVERY
-  OUT_FOR_DELIVERY
-  DELIVERED
-  EXCEPTION
+  PICKUP_SCHEDULED PICKED_UP AT_WAREHOUSE CONSOLIDATED DOCS_SUBMITTED
+  GREEN_LIGHT_RECEIVED FREIGHT_BOOKED CARGO_RECEIVED VESSEL_DEPARTED
+  TRANSHIPMENT PORT_ARRIVAL CUSTOMS_ENTRY CUSTOMS_RELEASED
+  AVAILABLE_DELIVERY OUT_FOR_DELIVERY DELIVERED EXCEPTION
 }
 
 model CustomsRecord {
-  id            String        @id @default(cuid())
-  poId          String        @unique
-  po            PurchaseOrder @relation(fields: [poId], references: [id])
-  country       String
-  formCNumber   String?
-  ccvoNumber    String?
-  dutyAmount    Float?
-  vatAmount     Float?
-  currency      String        @default("NGN")
-  entryDate     DateTime?
-  releaseDate   DateTime?
-  status        CustomsStatus @default(PENDING)
-  agent         String?
-  agentRef      String?
-  holdReason    String?
-  notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id          String        @id @default(cuid())
+  poId        String        @unique
+  po          PurchaseOrder @relation(fields: [poId], references: [id])
+  country     String
+  formCNumber String?
+  ccvoNumber  String?
+  dutyAmount  Float?
+  vatAmount   Float?
+  currency    String        @default("NGN")
+  entryDate   DateTime?
+  releaseDate DateTime?
+  status      CustomsStatus @default(PENDING)
+  agent       String?
+  agentRef    String?
+  holdReason  String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 enum CustomsStatus {
-  PENDING
-  ENTRY_SUBMITTED
-  ASSESSMENT
-  DUTY_PAID
-  EXAMINATION
-  RELEASED
-  ON_HOLD
-  BLOCKED
+  PENDING ENTRY_SUBMITTED ASSESSMENT DUTY_PAID EXAMINATION RELEASED ON_HOLD BLOCKED
 }
 
 model Delivery {
@@ -351,39 +280,9 @@ model Delivery {
 }
 
 enum DeliveryStatus {
-  PENDING
-  SCHEDULED
-  OUT_FOR_DELIVERY
-  DELIVERED
-  PARTIAL_DELIVERY
-  REFUSED
-  FAILED
+  PENDING SCHEDULED OUT_FOR_DELIVERY DELIVERED PARTIAL_DELIVERY REFUSED FAILED
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  title     String
-  message   String
-  type      String
-  read      Boolean  @default(false)
-  link      String?
-  createdAt DateTime @default(now())
-}
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  action     String
-  entity     String
-  entityId   String?
-  oldValues  Json?
-  newValues  Json?
-  ipAddress  String?
-  createdAt  DateTime @default(now())
-}
 model Task {
   id          String         @id @default(cuid())
   title       String
@@ -403,7 +302,7 @@ model Task {
 }
 
 enum TaskStatus { PENDING IN_PROGRESS COMPLETED CANCELLED }
-enum Priority { LOW NORMAL HIGH URGENT }
+enum Priority  { LOW NORMAL HIGH URGENT }
 
 model EmailLog {
   id        String         @id @default(cuid())
@@ -418,4 +317,29 @@ model EmailLog {
   task      Task?          @relation(fields: [taskId], references: [id])
   sender    User?          @relation(fields: [sentBy], references: [id])
   createdAt DateTime       @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
 }
