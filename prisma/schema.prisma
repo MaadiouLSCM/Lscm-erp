@@ -379,3 +379,38 @@ model AuditLog {
   ipAddress  String?
   createdAt  DateTime @default(now())
 }
+model Task {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus     @default(PENDING)
+  priority    Priority       @default(NORMAL)
+  dueDate     DateTime?
+  poId        String?
+  assignedTo  String?
+  createdBy   String?
+  po          PurchaseOrder? @relation(fields: [poId], references: [id])
+  assignee    User?          @relation("TaskAssignee", fields: [assignedTo], references: [id])
+  creator     User?          @relation("TaskCreator", fields: [createdBy], references: [id])
+  emailLogs   EmailLog[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+enum TaskStatus { PENDING IN_PROGRESS COMPLETED CANCELLED }
+enum Priority { LOW NORMAL HIGH URGENT }
+
+model EmailLog {
+  id        String         @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  status    String         @default("SENT")
+  poId      String?
+  taskId    String?
+  sentBy    String?
+  po        PurchaseOrder? @relation(fields: [poId], references: [id])
+  task      Task?          @relation(fields: [taskId], references: [id])
+  sender    User?          @relation(fields: [sentBy], references: [id])
+  createdAt DateTime       @default(now())
+}
