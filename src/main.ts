@@ -503,9 +503,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 </html>`;
 }
 
-const { execSync } = require('child_process');
-try { execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit', env: { ...process.env } }); } catch(e) { console.log('DB push skipped'); }
-app.listen(PORT, () => {
+app.get('/api/migrate', async (_, res) => {
+  const { execSync } = require('child_process');
+  try {
+    execSync('npx prisma db push --accept-data-loss', {
+      stdio: 'pipe',
+      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL }
+    });
+    res.json({ ok: true, message: '✅ Tables created!' });
+  } catch(e: any) {
+    res.json({ ok: false, error: e.toString() });
+  }
+});app.listen(PORT, () => {
   console.log('CLEAR ERP v2.0 running on port ' + PORT);
 });
 
